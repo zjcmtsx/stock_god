@@ -1,9 +1,30 @@
 {
   "name": "mygod-stock",
   "displayName": "我不是股神",
-  "description": "VSCode 内嵌 A 股关注列表与状态栏行情。红涨绿跌、批量刷新、可配置间隔与配色。",
+  "description": "VSCode 内嵌 A 股 / 港股 / 美股关注列表与状态栏行情。多市场行情、分组管理、拖拽排序、红涨绿跌、批量刷新、可配置间隔与配色。",
   "version": "0.1.0",
-  "publisher": "mygod",
+  "publisher": "stock-observe-assistant",
+  "license": "MIT",
+  "keywords": [
+    "stock",
+    "a-stock",
+    "hk-stock",
+    "us-stock",
+    "ticker",
+    "watchlist",
+    "finance",
+    "股票",
+    "行情",
+    "A股"
+  ],
+  "homepage": "https://github.com/zjcmtsx/stock_god#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zjcmtsx/stock_god.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zjcmtsx/stock_god/issues"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -262,6 +283,7 @@
   "devDependencies": {
     "@types/node": "^18.19.0",
     "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.20.0",
     "typescript": "^5.3.3"
   }
