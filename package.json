@@ -1,0 +1,268 @@
+{
+  "name": "mygod-stock",
+  "displayName": "我不是股神",
+  "description": "VSCode 内嵌 A 股关注列表与状态栏行情。红涨绿跌、批量刷新、可配置间隔与配色。",
+  "version": "0.1.0",
+  "publisher": "mygod",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mygodStock",
+          "title": "我不是股神",
+          "icon": "media/sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "mygodStock": [
+        {
+          "id": "mygodStockWatchList",
+          "name": "关注列表",
+          "icon": "media/sidebar.svg",
+          "contextualTitle": "我不是股神"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mygod.stock.add",
+        "title": "添加股票",
+        "category": "我不是股神",
+        "icon": "$(add)"
+      },
+      {
+        "command": "mygod.stock.addGroup",
+        "title": "添加分组",
+        "category": "我不是股神",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "mygod.stock.refresh",
+        "title": "刷新",
+        "category": "我不是股神",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "mygod.stock.pin",
+        "title": "置顶",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.unpin",
+        "title": "取消置顶",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.remove",
+        "title": "删除",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.toStatusBar",
+        "title": "添加至状态栏",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.removeFromStatusBar",
+        "title": "从状态栏移除",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.statusBarItemClicked",
+        "title": "状态栏股票操作",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.renameGroup",
+        "title": "重命名分组",
+        "category": "我不是股神"
+      },
+      {
+        "command": "mygod.stock.removeGroup",
+        "title": "删除分组",
+        "category": "我不是股神"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "mygod.stock.add",
+          "when": "view == mygodStockWatchList",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mygod.stock.addGroup",
+          "when": "view == mygodStockWatchList",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mygod.stock.refresh",
+          "when": "view == mygodStockWatchList",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "mygod.stock.pin",
+          "when": "view == mygodStockWatchList && viewItem =~ /stock-unpinned/",
+          "group": "1_order@1"
+        },
+        {
+          "command": "mygod.stock.unpin",
+          "when": "view == mygodStockWatchList && viewItem =~ /stock-pinned/",
+          "group": "1_order@1"
+        },
+        {
+          "command": "mygod.stock.toStatusBar",
+          "when": "view == mygodStockWatchList && viewItem =~ /stock/ && !(viewItem =~ /stock-inStatusBar/)",
+          "group": "2_status@1"
+        },
+        {
+          "command": "mygod.stock.removeFromStatusBar",
+          "when": "view == mygodStockWatchList && viewItem =~ /stock-inStatusBar/",
+          "group": "2_status@1"
+        },
+        {
+          "command": "mygod.stock.remove",
+          "when": "view == mygodStockWatchList && viewItem =~ /stock/",
+          "group": "9_danger@1"
+        },
+        {
+          "command": "mygod.stock.renameGroup",
+          "when": "view == mygodStockWatchList && viewItem == group-custom",
+          "group": "1_group@1"
+        },
+        {
+          "command": "mygod.stock.removeGroup",
+          "when": "view == mygodStockWatchList && viewItem == group-custom",
+          "group": "9_danger@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "mygod.stock.pin",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.unpin",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.remove",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.toStatusBar",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.removeFromStatusBar",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.statusBarItemClicked",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.renameGroup",
+          "when": "false"
+        },
+        {
+          "command": "mygod.stock.removeGroup",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "我不是股神",
+      "properties": {
+        "mygod.stock.refreshInterval": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "关注列表刷新间隔（秒），最小 1 秒。"
+        },
+        "mygod.stock.statusBarRefreshInterval": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "description": "状态栏刷新间隔（秒），最小 1 秒。"
+        },
+        "mygod.stock.statusBarMaxItems": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "状态栏最多展示的股票数量。超过时拒绝添加。"
+        },
+        "mygod.stock.list.upColor": {
+          "type": "string",
+          "default": "#FF2E2E",
+          "description": "关注列表上涨颜色（hex / css 颜色名）。VSCode TreeView 文字着色仅支持主题色，建议通过 workbench.colorCustomizations.\"mygod.stock.upColor\" 调整；此值仅用于将来的图标样式扩展。"
+        },
+        "mygod.stock.list.downColor": {
+          "type": "string",
+          "default": "#00B578",
+          "description": "关注列表下跌颜色（hex / css 颜色名）。VSCode TreeView 文字着色仅支持主题色，建议通过 workbench.colorCustomizations.\"mygod.stock.downColor\" 调整；此值仅用于将来的图标样式扩展。"
+        },
+        "mygod.stock.statusBar.upColor": {
+          "type": "string",
+          "default": "#FF2E2E",
+          "description": "状态栏上涨颜色（hex / css 颜色名）。留空则使用主题色 mygod.stock.upColor。"
+        },
+        "mygod.stock.statusBar.downColor": {
+          "type": "string",
+          "default": "#00B578",
+          "description": "状态栏下跌颜色（hex / css 颜色名）。留空则使用主题色 mygod.stock.downColor。"
+        }
+      }
+    },
+    "colors": [
+      {
+        "id": "mygod.stock.upColor",
+        "description": "股票上涨颜色（用于 ThemeColor 后备）",
+        "defaults": {
+          "light": "#D32F2F",
+          "dark": "#FF5252",
+          "highContrast": "#FF0000"
+        }
+      },
+      {
+        "id": "mygod.stock.downColor",
+        "description": "股票下跌颜色（用于 ThemeColor 后备）",
+        "defaults": {
+          "light": "#1B5E20",
+          "dark": "#4CAF50",
+          "highContrast": "#00FF00"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "compile-tests": "tsc -p . --outDir out",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.74.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.3"
+  }
+}
