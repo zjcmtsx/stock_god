@@ -10,7 +10,7 @@ import { readConfig, affectsConfig } from './service/configService';
 import { search } from './service/sinaApi';
 
 export function activate(context: vscode.ExtensionContext): void {
-  const store = new WatchListStore(context.globalState);
+  const store = new WatchListStore(context.globalStorageUri.fsPath, context.globalState);
   let config = readConfig();
 
   const scheduler = new Scheduler(store, {

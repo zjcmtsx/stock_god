@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   WatchListState,
   WatchListItem,
@@ -12,6 +14,8 @@ import {
 
 const STATE_KEY = 'mygod.stock.watchList';
 const NAME_MAX_LEN = 20;
+const FILE_NAME = 'watchList.json';
+const WATCH_DEBOUNCE_MS = 150;
 
 export interface AddGroupResult {
   ok: boolean;
@@ -29,22 +33,112 @@ export class WatchListStore {
   private readonly _onDidChange = new vscode.EventEmitter<void>();
   readonly onDidChange = this._onDidChange.event;
 
-  constructor(private readonly memento: vscode.Memento) {
-    this.state = this.loadAndMigrate();
+  private readonly filePath: string;
+  /** 最后一次本进程写入的序列化内容，用于抑制自写触发的文件事件 */
+  private lastWrittenContent = '';
+  private watcher?: fs.FSWatcher;
+  private watchTimer?: NodeJS.Timeout;
+
+  /**
+   * @param storageDir 全局存储目录（context.globalStorageUri.fsPath）
+   * @param legacyMemento 旧版 globalState，用于首次迁移
+   */
+  constructor(private readonly storageDir: string, legacyMemento?: vscode.Memento) {
+    this.filePath = path.join(storageDir, FILE_NAME);
+    this.ensureDir();
+    this.state = this.loadAndMigrate(legacyMemento);
+    this.startWatching();
   }
 
-  private loadAndMigrate(): WatchListState {
-    const raw = this.memento.get<any>(STATE_KEY);
+  private ensureDir(): void {
     try {
-      return migrate(raw);
+      fs.mkdirSync(this.storageDir, { recursive: true });
+    } catch {
+      /* 目录已存在或无法创建，写入时再处理 */
+    }
+  }
+
+  private loadAndMigrate(legacyMemento?: vscode.Memento): WatchListState {
+    // 1) 文件已存在 → 真相源
+    if (fs.existsSync(this.filePath)) {
+      try {
+        const content = fs.readFileSync(this.filePath, 'utf8');
+        this.lastWrittenContent = content;
+        return migrate(JSON.parse(content));
+      } catch (err) {
+        void vscode.window.showWarningMessage('分组数据初始化失败，已重置');
+        const reset = cloneDefault();
+        void this.writeFile(reset);
+        return reset;
+      }
+    }
+
+    // 2) 文件不存在但旧 globalState 有数据 → 首次迁移
+    const raw = legacyMemento?.get<any>(STATE_KEY);
+    try {
+      const migrated = migrate(raw);
+      void this.writeFile(migrated);
+      return migrated;
     } catch (err) {
       void vscode.window.showWarningMessage('分组数据初始化失败，已重置');
-      return cloneDefault();
+      const reset = cloneDefault();
+      void this.writeFile(reset);
+      return reset;
+    }
+  }
+
+  /** 原子写：写 .tmp 再 rename 覆盖；Windows 覆盖失败时回退。 */
+  private async writeFile(state: WatchListState): Promise<void> {
+    const content = JSON.stringify(state);
+    this.lastWrittenContent = content;
+    const tmp = this.filePath + '.tmp';
+    try {
+      await fs.promises.mkdir(this.storageDir, { recursive: true });
+      await fs.promises.writeFile(tmp, content, 'utf8');
+      try {
+        await fs.promises.rename(tmp, this.filePath);
+      } catch {
+        // Windows 下 rename 覆盖可能失败：回退为删除目标后再 rename
+        await fs.promises.rm(this.filePath, { force: true });
+        await fs.promises.rename(tmp, this.filePath);
+      }
+    } catch (err) {
+      void vscode.window.showWarningMessage('自选股数据写入失败');
+    }
+  }
+
+  private startWatching(): void {
+    try {
+      this.watcher = fs.watch(this.storageDir, (_event, filename) => {
+        if (filename && filename !== FILE_NAME) return;
+        if (this.watchTimer) clearTimeout(this.watchTimer);
+        this.watchTimer = setTimeout(() => this.reloadFromFile(), WATCH_DEBOUNCE_MS);
+      });
+    } catch {
+      /* 监听失败不影响本窗口正常使用 */
+    }
+  }
+
+  private reloadFromFile(): void {
+    let content: string;
+    try {
+      content = fs.readFileSync(this.filePath, 'utf8');
+    } catch {
+      // 文件被外部删除等 → 以内存状态为准
+      return;
+    }
+    if (content === this.lastWrittenContent) return; // 自写回显，跳过
+    try {
+      this.state = migrate(JSON.parse(content));
+      this.lastWrittenContent = content;
+      this._onDidChange.fire();
+    } catch {
+      /* 外部写入了损坏内容，忽略本次 reload */
     }
   }
 
   private async persist(): Promise<void> {
-    await this.memento.update(STATE_KEY, this.state);
+    await this.writeFile(this.state);
     this._onDidChange.fire();
   }
 
@@ -273,6 +367,8 @@ export class WatchListStore {
   }
 
   dispose(): void {
+    if (this.watchTimer) clearTimeout(this.watchTimer);
+    this.watcher?.close();
     this._onDidChange.dispose();
   }
 }
